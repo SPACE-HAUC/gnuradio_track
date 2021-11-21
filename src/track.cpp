@@ -4,6 +4,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "DateTime.h"
 #include "meb_debug.h"
 #include "track.hpp"
@@ -79,7 +80,7 @@ int main(int argc, char *argv[])
 
             if (sleep_timer == 21 && current_target != nullptr) // 21 second mark, now we prepare command
             {
-                snprintf(cmdbuf, sizeof(cmdbuf), "rtl_power -f 437.475M:437.525M:1000 -i 1 -g 50 -e %ds %s_%d_%d.csv", pass_length + 40, get_datetime_now_raw(), pass_length, current_target->GetTle().NoradNumber());
+                snprintf(cmdbuf, sizeof(cmdbuf), "rtl_power -f 437.475M:437.525M:1 -i 1 -g 50 -e %ds %s_%d_%d.csv", pass_length + 40, get_datetime_now_raw(), pass_length, current_target->GetTle().NoradNumber());
             }
             if (sleep_timer == 20 && current_target != nullptr) // 20 seconds mark, now we command
             {
