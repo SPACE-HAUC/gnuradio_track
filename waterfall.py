@@ -54,6 +54,6 @@ tn_image = image.resize(maxsize)
 
 plt.figure()
 extent = [fmin, fmax, 0, fmax - fmin]
-plt.imshow(np.array(tn_image), extent = extent)
+plt.imshow(np.array(tn_image), extent = extent, origin='lower')
 plt.colorbar()
 plt.show()
