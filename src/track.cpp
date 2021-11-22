@@ -15,10 +15,15 @@ void sighandler(int sig)
     done = 1;
 }
 
-char cmdbuf[256];
+char cmdbuf[512];
+char fname[128];
 
 void *datacollect(void *in)
 {
+    system(cmdbuf);
+    snprintf(cmdbuf, sizeof(cmdbuf), " 7za a -mm=BZip2 %s.bzip2 %s.bin", fname, fname);
+    system(cmdbuf);
+    snprintf(cmdbuf, sizeof(cmdbuf), "rm -f %s.bin", fname);
     system(cmdbuf);
     return NULL;
 }
@@ -79,7 +84,8 @@ int main(int argc, char *argv[])
 
             if (sleep_timer == 21 && current_target != nullptr) // 21 second mark, now we prepare command
             {
-                snprintf(cmdbuf, sizeof(cmdbuf), "rtl_power -f 437.475M:437.525M:1000 -i 1 -g 50 -e %ds %s_%d_%d.csv", pass_length + 40, get_datetime_now_raw(), pass_length, current_target->GetTle().NoradNumber());
+                snprintf(fname, sizeof(fname), "%s_%d_%d", get_datetime_now_raw(), pass_length, current_target->GetTle().NoradNumber());
+                snprintf(cmdbuf, sizeof(cmdbuf), "/usr/bin/python3 rtl_sdr_iqcapture_250k.py %d %s.bin", pass_length + 40, fname);
             }
             if (sleep_timer == 20 && current_target != nullptr) // 20 seconds mark, now we command
             {
