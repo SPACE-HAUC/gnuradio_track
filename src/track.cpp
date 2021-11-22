@@ -5,6 +5,8 @@
 #include <signal.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <queue>
+#include <string>
 #include "DateTime.h"
 #include "meb_debug.h"
 #include "track.hpp"
@@ -19,13 +21,40 @@ void sighandler(int sig)
 char cmdbuf[512];
 char fname[128];
 
+std::queue<std::string> files;
+pthread_mutex_t queue = PTHREAD_MUTEX_INITIALIZER;
+
+void *compress_cleanup(void *in)
+{
+    while (!done)
+    {
+        char cmd[512];
+        std::string fn = "";
+        pthread_mutex_lock(&queue);
+        if (!files.empty())
+            fn = files.front();
+        pthread_mutex_unlock(&queue);
+        if (fn != "")
+        {
+            snprintf(cmd, sizeof(cmd), "7za a -mm=BZip2 %s.bzip2 %s.bin", fn.c_str(), fn.c_str());
+            system(cmd);
+            snprintf(cmd, sizeof(cmd), "rm -f %s.bin", fn.c_str());
+            system(cmd);
+            pthread_mutex_lock(&queue);
+            files.pop();
+            pthread_mutex_unlock(&queue);
+        }
+        sleep(1);
+    }
+    return NULL;
+}
+
 void *datacollect(void *in)
 {
     system(cmdbuf);
-    snprintf(cmdbuf, sizeof(cmdbuf), " 7za a -mm=BZip2 %s.bzip2 %s.bin", fname, fname);
-    system(cmdbuf);
-    snprintf(cmdbuf, sizeof(cmdbuf), "rm -f %s.bin", fname);
-    system(cmdbuf);
+    pthread_mutex_lock(&queue);
+    files.push(std::string(fname));
+    pthread_mutex_unlock(&queue);
     return NULL;
 }
 
@@ -69,9 +98,14 @@ int main(int argc, char *argv[])
 
     int pass_length = 0;
     pthread_t jobthread = 0;
+    pthread_t compressthread = 0;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    if (pthread_create(&compressthread, NULL, &compress_cleanup, NULL))
+    {
+        errprintlf(FATAL "Could not create compress thread");
+    }
     SGP4 *current_target = nullptr;
     while (!done) // main loop
     {
@@ -206,13 +240,14 @@ int main(int argc, char *argv[])
             cmd_el = 90;
             pending_az = true;
             pending_el = true;
-            sleep_timer = 120;        // 120 seconds
+            sleep_timer = 120; // 120 seconds
             current_target = nullptr;
         }
         sat_viewable = false;
     }
     // clean up
     pthread_attr_destroy(&attr);
+    pthread_join(compressthread, NULL);
     delete dish;
     return 0;
 }
