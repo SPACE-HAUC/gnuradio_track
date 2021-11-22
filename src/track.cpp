@@ -4,6 +4,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "DateTime.h"
 #include "meb_debug.h"
 #include "track.hpp"
@@ -112,7 +113,7 @@ int main(int argc, char *argv[])
             Eci pos_now = target->FindPosition(tnow);
             current_pos = dish->GetLookAngle(pos_now);
             CoordGeodetic current_lla = pos_now.ToGeodetic();
-            tprintlf("Obj %d: %.2f AZ, %.2f EL | %.2f LA, %.2f LN", i, current_pos.azimuth DEG, current_pos.elevation DEG, current_lla.latitude DEG, current_lla.longitude DEG);
+            tprintlf("Obj %d: %.2f AZ, %.2f EL | %.2f LA, %.2f LN", target->GetTle().NoradNumber(), current_pos.azimuth DEG, current_pos.elevation DEG, current_lla.latitude DEG, current_lla.longitude DEG);
             if (current_pos.elevation DEG > MIN_ELEV && current_target == nullptr) // we are already in a pass, scramble!
             {
                 current_target = target;
@@ -133,7 +134,7 @@ int main(int argc, char *argv[])
                 Eci eci_ahd = target->FindPosition(tnext);
                 CoordTopocentric pos_ahd = dish->GetLookAngle(eci_ahd);
                 if (i == 0)
-                    tprintlf(GREEN_BG RED_FG "Lookahead %d: %.2f AZ %.2f EL", j, pos_ahd.azimuth DEG, pos_ahd.elevation DEG);
+                    tprintlf(GREEN_BG RED_FG "Lookahead %d: %.2f AZ %.2f EL", target->GetTle().NoradNumber(), pos_ahd.azimuth DEG, pos_ahd.elevation DEG);
                 int ahd_el = pos_ahd.elevation DEG;
                 if (ahd_el < (int)MIN_ELEV) // still not in view 4 minutes ahead, don't care
                 {

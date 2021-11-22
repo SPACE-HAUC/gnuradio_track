@@ -32,6 +32,7 @@ void SGP4::SetTle(const Tle& tle)
      * extract and format tle data
      */
     elements_ = OrbitalElements(tle);
+    tle_ = tle;
 
     Initialise();
 }
