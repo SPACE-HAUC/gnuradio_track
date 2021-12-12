@@ -4,9 +4,9 @@
  * @brief Contains debug-related macros and function-like macros.
  * @version 0.1
  * @date 2021.07.26
- * 
+ *
  * @copyright Copyright (c) 2021
- * 
+ *
  */
 
 #ifndef MEB_DEBUG_HPP

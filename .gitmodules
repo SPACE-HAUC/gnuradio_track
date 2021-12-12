@@ -1,0 +1,3 @@
+[submodule "sgp4-lib"]
+	path = sgp4-lib
+	url = https://github.com/smallsatmakers/sgp4-lib.git

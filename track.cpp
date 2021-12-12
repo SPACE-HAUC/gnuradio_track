@@ -7,10 +7,24 @@
 #include <pthread.h>
 #include <queue>
 #include <string>
-#include "DateTime.h"
-#include "meb_debug.h"
-#include "track.hpp"
-#include "tleobj.hpp"
+#include "DateTime.hpp"
+#include "meb_print.h"
+
+#include "CoordTopocentric.hpp"
+#include "SGP4.hpp"
+#include "Observer.hpp"
+
+#define SEC *1000000 // nanoseconds to seconds
+#define DEG *(180/3.1415926) // radians to degrees
+#define GS_LAT 42.655583
+#define GS_LON -71.325433
+#define ELEV 0.061 // Lowell ASL + Olney Height; Kilometers for some reason.
+#define MIN_ELEV 10.0 // degrees
+#define ELEV_ADJ 0 // degrees adjustment +-
+#define AZIM_ADJ -34 // degrees adjustment +-
+
+using namespace LSGP4;
+
 
 volatile sig_atomic_t done = 0;
 void sighandler(int sig)
@@ -58,6 +72,26 @@ void *datacollect(void *in)
     return NULL;
 }
 
+static char *get_time_now_raw()
+{
+    static __thread char buf[128];
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    snprintf(buf, sizeof(buf), "%02d%02d%02d",
+             tm.tm_hour, tm.tm_min, tm.tm_sec);
+    return buf;
+}
+
+static char *get_datetime_now_raw()
+{
+    static __thread char buf[128];
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    snprintf(buf, sizeof(buf), "%04d%02d%2d_%02d%02d%02d",
+             tm.tm_year + 1900, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+    return buf;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 2)
@@ -66,7 +100,7 @@ int main(int argc, char *argv[])
         return 0;
     }
     // read TLEs
-    auto objs = read_tle(argv[1]);
+    auto objs = ReadTleFromFile(argv[1]);
     bprintlf(BLUE_FG "Read %d TLEs", objs.size());
     if (objs.size() < 1)
     {
@@ -76,10 +110,10 @@ int main(int argc, char *argv[])
     // set up signal handler
     signal(SIGINT, sighandler);
     // set up targets
-    std::vector<SGP4> targets(objs.size(), Tle(objs[0].l1, objs[0].l2)); // no default constructor exists, so create vector with all same TLEs
+    std::vector<SGP4> targets(objs.size(), objs[0]); // no default constructor exists, so create vector with all same TLEs
     for (int i = 0; i < objs.size(); i++)
     {
-        targets[i].SetTle(Tle(objs[i].l1, objs[i].l2)); // set individual TLEs
+        targets[i].SetTle(Tle(objs[i])); // set individual TLEs
     }
     // set up observer
     Observer *dish = new Observer(GS_LAT, GS_LON, ELEV);
