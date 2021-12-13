@@ -250,6 +250,8 @@ int main(int argc, char *argv[])
             if (current_target != nullptr) // target has been assigned
                 break;
         }
+        if (initial_load)
+            initial_load = false;
 
         // Step 3: Are we in a pass?
         if (current_target != nullptr)
