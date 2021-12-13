@@ -141,6 +141,13 @@ int main(int argc, char *argv[])
         errprintlf(FATAL "Could not create compress thread");
     }
     SGP4 *current_target = nullptr;
+
+    // Set up for network updating TLEs.
+    const char *url = "https://celestrak.com/NORAD/elements/stations.txt";
+    bool initial_load = true;
+    DateTime launch_time;
+    launch_time = launch_time.Now();
+
     while (!done) // main loop
     {
         // Step 1: Execute command
@@ -197,6 +204,12 @@ int main(int argc, char *argv[])
         for (int j = 0; j < targets.size() && current_target == nullptr; j++)
         {
             SGP4 *target = &targets[j];
+            if (launch_time.AddDays(1) < tnow || initial_load)
+            {
+                objs[j].UpdateFromNetwork(url);
+                target->SetTle(objs[j]);
+                launch_time = tnow;
+            }
             for (int i = 0; i < (LOOKAHEAD_MAX - LOOKAHEAD_MIN) * 60; i++)
             {
                 Eci eci_ahd = target->FindPosition(tnext);
